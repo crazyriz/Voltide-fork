@@ -6,7 +6,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-000000?logo=windows&logoColor=white" alt="Platform">
   <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4" alt=".NET">
-  <img src="https://img.shields.io/badge/size-123KB-74dd7c" alt="Size">
+  <img src="https://img.shields.io/badge/size-8.32%MB-74dd7c" alt="Size">
   <img src="https://img.shields.io/badge/license-MIT-74dd7c" alt="License">
 </p>
 
