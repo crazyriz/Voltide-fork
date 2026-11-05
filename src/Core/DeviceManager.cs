@@ -22,22 +22,21 @@ namespace Voltide.Core
         private readonly object _lock = new object();
         private readonly object _refreshLock = new object();
         private List<DeviceSnapshot> _snapshots = new List<DeviceSnapshot>();
-
+        
         public DeviceManager()
         {
             _providers.Add(new LogitechProvider());
             _providers.Add(new MchoseProvider());
-            _providers.Add(new MchoseK7MouseProvider());
-            _providers.Add(new MchoseA5MouseProvider());
             _providers.Add(new AsusRogProvider());
-            _providers.Add(new AsusHeadsetProvider());
-            _providers.Add(new TaiduProvider());
             _providers.Add(new ImecooProvider());
-            _providers.Add(new AtkMouseProvider());
+            //_providers.Add(new AtkMouseProvider());
             _providers.Add(new AtkHeadsetProvider());
             _providers.Add(new XInputProvider());
             _providers.Add(new RazerProvider());
             _providers.Add(new HeadsetProvider());
+            _providers.Add(new WLBeastMiniProvider());
+            _providers.Add(new Luna33EvoProvider());
+            _providers.Add(new ATKF1V3UltProvider());
         }
 
         public List<DeviceSnapshot> Snapshot()
@@ -61,11 +60,9 @@ namespace Voltide.Core
         {
             List<DeviceSnapshot> next = new List<DeviceSnapshot>();
 
-            // Enumerate once per refresh and share the result. Every provider used to
-            // walk the whole HID tree itself, which cost ~400 ms per provider on a
-            // machine with a busy USB stack — five providers meant two seconds of
-            // identical work.
+            // Enumerate once per refresh and share the result.
             List<HidDeviceInfo> catalog;
+
             try
             {
                 catalog = HidNative.Enumerate();
@@ -74,10 +71,12 @@ namespace Voltide.Core
             {
                 catalog = new List<HidDeviceInfo>();
             }
-
+            
+            
             foreach (IDeviceProvider p in _providers)
             {
                 List<DeviceInfo> devices;
+
                 try
                 {
                     devices = p.Discover(catalog);
@@ -90,6 +89,7 @@ namespace Voltide.Core
                 foreach (DeviceInfo d in devices)
                 {
                     DeviceReading r;
+
                     try
                     {
                         r = p.Read(d);
