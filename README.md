@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/license-MIT-74dd7c" alt="License">
 </p>
 
-主要功能&內容自行去原案看
+主要功能&內容自行去原案看 [Voltide](https://github.com/sdparklab/Voltide)
 
 ## 修改內容
 
