@@ -69,7 +69,7 @@ namespace Voltide.UI
         private const float SpinSeconds = 0.62f;     // one full turn per refresh
         private const float DenySeconds = 0.42f;     // "not yet" shake
         private const float HintSeconds = 1.9f;      // how long the hint text lives
-        private const long RefreshCooldownMs = 5000;
+        private const long RefreshCooldownMs = 5;
         private const float HoverSeconds = 0.13f;
         private const float PressSeconds = 0.09f;
         private const float PressScale = 0.86f;
@@ -127,6 +127,7 @@ namespace Voltide.UI
 
         /// <summary>Private message the frame clock posts to wake the UI thread.</summary>
         private const int WmFrame = 0x800A;
+        
 
         /// <summary>Per-device animation state. One object instead of four parallel maps.</summary>
         private class CardAnim
@@ -399,23 +400,20 @@ namespace Voltide.UI
                 {
                     target = s.Reading.Percent.Value;
                 }
-                else if (a != null)
+                else if (s.Reading.Online)
                 {
-                    // No fresh reading. Keep the level where it is, but do NOT write it
-                    // back into Percent: that made a switched-off mouse sit on "90%"
-                    // forever with nothing on the card saying the number was stale.
-                    // The card shows "--", dims, and draws no liquid instead.
-                    target = a.Target;
+                    // 裝置已連線，但尚未取得有效電量。
+                    // 顯示空卡片，不虛構電量。
+                    target = 0f;
                 }
                 else if (s.Reading.Sleeping)
                 {
-                    // first sight of a device that is already asleep: show the card
-                    // empty, its text reads "--" and the status says 设备休眠
+                    // 第一次發現時已經休眠。
                     target = 0f;
                 }
                 else
                 {
-                    continue;   // nothing to show yet
+                    continue;
                 }
 
                 bool wasLevel = a != null && HasLevel(a.Snap);
@@ -569,6 +567,7 @@ namespace Voltide.UI
         private List<string> VisibleOrder()
         {
             List<string> live = new List<string>();
+            List<string> waiting = new List<string>();
             List<string> asleep = new List<string>();
 
             foreach (string id in _order)
@@ -576,14 +575,24 @@ namespace Voltide.UI
                 CardAnim a;
                 if (!_anim.TryGetValue(id, out a) || a.Leaving) continue;
 
-                bool online = a.Snap != null && a.Snap.Reading != null && a.Snap.Reading.Online;
-                if (online) live.Add(id);
-                else asleep.Add(id);
+                if (HasLevel(a.Snap))
+                {
+                    live.Add(id);
+                }
+                else if (a.Snap != null && a.Snap.Reading != null && a.Snap.Reading.Online)
+                {
+                    waiting.Add(id);
+                }
+                else
+                {
+                    asleep.Add(id);
+                }
             }
 
-            live.AddRange(asleep);
-            return live;
-        }
+    live.AddRange(waiting);
+    live.AddRange(asleep);
+    return live;
+}
 
         /// <summary>
         /// Rebuilds the display order in three tiers, each keeping arrival order:
@@ -599,6 +608,7 @@ namespace Voltide.UI
         {
             List<string> source = new List<string>(_order);
             List<string> live = new List<string>();
+            List<string> waiting = new List<string>();
             List<string> asleep = new List<string>();
 
             foreach (string id in source)
@@ -606,17 +616,25 @@ namespace Voltide.UI
                 CardAnim a;
                 if (!_anim.TryGetValue(id, out a) || a.Leaving) continue;
 
-                if (a.Snap == null || a.Snap.Reading == null) { asleep.Add(id); continue; }
-
-                DeviceReading r = a.Snap.Reading;
-                if (r.Online && r.Percent.HasValue) live.Add(id);
-                else asleep.Add(id);
+                if (HasLevel(a.Snap))
+                {
+                    live.Add(id);
+                }
+                else if (a.Snap != null && a.Snap.Reading != null && a.Snap.Reading.Online)
+                {
+                    waiting.Add(id);
+                }
+                else
+                {
+                    asleep.Add(id);
+                }
             }
 
-            _order.Clear();
-            _order.AddRange(live);
-            _order.AddRange(asleep);
-        }
+    _order.Clear();
+    _order.AddRange(live);
+    _order.AddRange(waiting);
+    _order.AddRange(asleep);
+}
 
         /// <summary>Moves the strip one slot; stops at either end.</summary>
         private void AdvancePage(int direction, bool wrap)
@@ -948,17 +966,24 @@ namespace Voltide.UI
         /// has no focusable child controls, so WM_MOUSEWHEEL never reaches a control.
         /// </summary>
         protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == WmFrame) { OnTick(); return; }
+{
+    if (m.Msg == WmFrame)
+    {
+        OnTick();
+        return;
+    }
 
-            if (m.Msg == 0x020A)   // WM_MOUSEWHEEL
-            {
-                int delta = (short)(m.WParam.ToInt64() >> 16);
-                if (delta != 0) AdvancePage(delta < 0 ? 1 : -1, false);
-                return;
-            }
-            base.WndProc(ref m);
-        }
+    
+
+    if (m.Msg == 0x020A)   // WM_MOUSEWHEEL
+    {
+        int delta = (short)(m.WParam.ToInt64() >> 16);
+        if (delta != 0) AdvancePage(delta < 0 ? 1 : -1, false);
+        return;
+    }
+
+    base.WndProc(ref m);
+}
 
         private void DrawIcons(Graphics g)
         {
@@ -1178,6 +1203,9 @@ namespace Voltide.UI
                 for (int i = 0; i < RefreshOptions.Length; i++)
                 {
                     float t = _rateT[i];
+                    if (t < 0f) t = 0f;
+                    if (t > 1f) t = 1f;
+
                     float eased = t * t * (3f - 2f * t);   // smoothstep
 
                     Color idle = Color.FromArgb(135, 135, 135);
@@ -1210,10 +1238,13 @@ namespace Voltide.UI
         /// <summary>Linear colour interpolation; t is clamped by the caller.</summary>
         private static Color Mix(Color a, Color b, float t)
         {
+            if (t < 0f) t = 0f;
+            if (t > 1f) t = 1f;
+
             return Color.FromArgb(
-                (int)(a.R + (b.R - a.R) * t),
-                (int)(a.G + (b.G - a.G) * t),
-                (int)(a.B + (b.B - a.B) * t));
+            (int)(a.R + (b.R - a.R) * t),
+            (int)(a.G + (b.G - a.G) * t),
+            (int)(a.B + (b.B - a.B) * t));
         }
 
         /// <summary>Hit test for the three radios. Returns -1 when the click missed.</summary>
@@ -1362,11 +1393,13 @@ namespace Voltide.UI
         }
 
         // ------------------------------------------------------------ window
+       
 
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
             TryRoundCorners();
+            
         }
 
         private void TryRoundCorners()
