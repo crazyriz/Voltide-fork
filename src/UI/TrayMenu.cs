@@ -10,10 +10,11 @@ namespace Voltide.UI
 {
     internal enum MenuRowKind
     {
-        Level,      // name + bar + percentage
-        Asleep,     // name + grey bar + 休眠中
-        Autostart,  // 开机启动 with a toggle
-        Quit        // 退出应用
+        Level,          // 已取得電量
+        Asleep,         // 休眠或離線
+        OnlineUnknown,  // 已連線，但電量未知
+        Autostart,
+        Quit
     }
 
     internal class MenuRow
@@ -40,6 +41,23 @@ namespace Voltide.UI
     /// </summary>
     internal class MenuPanel : Control
     {
+        public void UpdateRows(List<MenuRow> rows)
+{
+    if (rows == null)
+        rows = new List<MenuRow>();
+
+    _rows.Clear();
+    _rows.AddRange(rows);
+
+    _hover = new float[_rows.Count + 2];
+    _hot = -1;
+
+    Size = new Size(
+        (int)Math.Round(W * _scale),
+        (int)Math.Round(TotalHeight() * _scale));
+
+    Invalidate();
+}
         private const float W = 270f;
         private const float HeaderH = 19f;
         private const float RowH = 30f;
@@ -87,7 +105,7 @@ namespace Voltide.UI
         private readonly Font _cnFont;
         private readonly Font _markFont;
 
-        private readonly float[] _hover;
+        private float[] _hover;
         private System.Windows.Forms.Timer _anim;
         private int _hot = -1;
 
@@ -601,7 +619,7 @@ namespace Voltide.UI
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
         public MenuPanel Panel { get; set; }
-
+        
         private bool _armed;
         private System.Windows.Forms.Timer _armTimer;
 
