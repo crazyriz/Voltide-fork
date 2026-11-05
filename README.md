@@ -10,82 +10,21 @@
   <img src="https://img.shields.io/badge/license-MIT-74dd7c" alt="License">
 </p>
 
-一款轻量的 Windows 托盘工具，在一块面板中显示 2.4G 无线外设（键盘与鼠标）的电量，无需安装任何厂商软件。
+主要功能&內容自行去原案看
 
-目前已内置罗技、迈丛、ROG 三家适配器。这是作者手头拥有的设备，而非工具的能力边界：适配层被设计成「支持一个新品牌 = 新增一个独立的类」。
+## 修改內容
 
-![Voltide 面板](docs/panel.png)
-
-*三台设备：89% 放电中、47% 中等电量，以及一台休眠设备保留着最后一次读数。*
-
-![Voltide 四台设备](docs/panel-4-devices.png)
-
-*四台设备——超过三台时，卡片行可用鼠标滚轮横向翻阅。*
-
-若你使用的设备尚未被支持，可以通过 Issue 提出。作者也欢迎借用设备进行实测，并据此补充对应型号的适配。
-
-## 功能
-
-- **一块面板容纳全部设备。** 卡片自动排布并居中；设备接入即出现。超过三台时，卡片行可用鼠标滚轮横向翻阅。
-- **液面指示。** 闪电随电量注满，面板打开时有缓慢的波动。
-- **三档配色。** 50% 及以上为绿色，20% 至 49% 为黄色，20% 以下为红色。百分比与液面同步变色。
-- **准确的休眠状态。** 曾经上报过的设备在休眠时保留最后一次读数并变暗——一台睡着的鼠标仍然能提供信息。
-- **可调刷新间隔。** 面板打开时可选 15 秒、30 秒或 90 秒，设置会被保存并在下次启动时恢复。
-- **托盘集成。** 左键打开面板，右键菜单列出每台设备及其当前电量。
-- **开机自启。** 可选，在托盘菜单中切换。
-- **单文件发布。** 8.3 MB，无安装程序，除 Windows 自带的 .NET Framework 外无其他依赖。
-
-## 当前已支持
-
-以下设备均已在真实硬件上验证。它们代表作者手头拥有的设备，而非架构所能覆盖的上限。
-
-| 品牌 | 设备 | 匹配 | 协议 |
-|---|---|---|---|
-| 罗技 | G304 / GPW3 / M750M / G102 / Unifying | VID `046D` | HID++ 2.0 |
-| 迈丛 MCHOSE | K99 v2、G75 Pro | `3554:FA09` | 20 字节帧 |
-| 迈丛 MCHOSE | K7 V2 Ultra+ | `3837:1014` | 64 字节 |
-| 迈丛 MCHOSE | A5 V3 | VID `3837` | 65 字节 Feature |
-| ROG | AZOTH EXTREME（夜魔 Extreme） | `0B05:1ACE` | 64 字节帧 |
-| ROG | Delta II、Pelta | VID `0B05` | 64 字节，0xFF00 |
-| 泰度 TAIDU | TSG809 | VID `A8A5` | 厂商自定义 |
-| IMECOO | P1 | `3554:FB34` | 17 字节 |
-| ATK | A9 Air 大师+（鼠标） | `373B:1278` | 17 字节，和校验 0x4D |
-| ATK | N9 V2 Ultimate（耳机） | `373B:1262` | 64 字节，report 0x55 |
-| Xbox | Series X\|S、8BitDo 等 XInput 手柄 | 槽位 0–3 | 四档电量 |
-| 雷蛇 Razer | 毒蝰、炼狱蝰蛇、巴塞利斯蛇等 24 款无线鼠标 | VID `1532` | 91 字节 Feature |
-| 雷蛇 Razer | 旋风黑鲨 V2 专业版 | `1532:0555` | 64 字节音频通道 |
-
-> 感谢 [@yiwluoq](https://github.com/yiwluoq)（ATK）、[@Mor16rty](https://github.com/Mor16rty)（IMECOO、Xbox）、
-> [@whitzard0421](https://github.com/whitzard0421)（K7 V2 Ultra+）、[@koobzx](https://github.com/koobzx)（A5 V3）、
-> [@ptaritsu](https://github.com/ptaritsu)（TAIDU）、[@Cantrarella](https://github.com/Cantrarella)（ROG Delta II / Pelta）
-> 在真实硬件上逆向并验证各自的设备，特此致谢。
->
-> 雷蛇与狼蛛协议的逆向由 B 站网友 木兮丶念旧 完成并分享，一并致谢。
-
-### 如何添加新设备
-
-若你的设备不在列表中，可以在不触碰界面的前提下完成扩展。每个品牌都是一个自包含的适配器：
-
-```csharp
-public interface IDeviceProvider
-{
-    string Name { get; }
-    List<DeviceInfo> Discover(List<HidDeviceInfo> catalog);   // catalog 由 DeviceManager 统一枚举
-    DeviceReading Read(DeviceInfo device); // 发送查询，解析回复
-}
-```
-
-添加步骤：
-
-1. 新建 `src/Providers/YourBrandProvider.cs`，实现 `IDeviceProvider`。
-2. 在 `src/Core/DeviceManager.cs` 中与现有适配器一并注册。
-3. 重新编译。
-
-`Discover()` 会收到系统暴露的全部 HID 集合；`src/Interop/HidNative.cs` 提供枚举能力，`HidSession` 负责读写。现有五个适配器是复杂度递进的可参考样例，具体帧格式见[协议说明](#协议说明)。
-
-若厂商协议未公开，可以通过抓包还原：运行官方工具，用 [USBPcap](https://desowin.org/usbpcap/) 记录 USB 流量，定位返回百分比的那一次请求。三个现有适配器都是这样写成的。
-
-**欢迎为新增设备提交 Pull Request。** 请附上型号名称与承载电量的原始回复报文，以便核对。
+- 新增Wlmouse Beast Mini
+- 取消A9Air改為F1V3Ult+(貌似通訊協議一樣)
+- 新增
+-
+-
+-
+-
+-
+-
+-
+-
 
 ## 使用方法
 
