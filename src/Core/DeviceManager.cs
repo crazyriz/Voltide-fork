@@ -37,6 +37,7 @@ namespace Voltide.Core
             _providers.Add(new WLBeastMiniProvider());
             _providers.Add(new Luna33EvoProvider());
             _providers.Add(new ATKF1V3UltProvider());
+            _providers.Add(new VancerAkitsuProvider());
         }
 
         public List<DeviceSnapshot> Snapshot()
