@@ -14,6 +14,7 @@
 
 ## 修改內容
 
+- 新增AttackShark R5 Ultra
 - 新增Vancer Akitsu
 - 新增Wlmouse Beast Mini
 - 取消A9Air改為F1V3Ult+(貌似通訊協議一樣)
