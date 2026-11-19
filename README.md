@@ -14,7 +14,7 @@
 
 ## 修改內容
 
-- 修改Tray 充電時電量旁顯示閃電符號
+- 修改充電時 Tray電量旁顯示閃電符號
 - 新增AttackShark R5 Ultra
 - 新增Vancer Akitsu
 - 新增Wlmouse Beast Mini
