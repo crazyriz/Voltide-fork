@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -22,7 +23,7 @@ namespace Voltide.Core
         private readonly object _lock = new object();
         private readonly object _refreshLock = new object();
         private List<DeviceSnapshot> _snapshots = new List<DeviceSnapshot>();
-        
+
         public DeviceManager()
         {
             _providers.Add(new LogitechProvider());
@@ -38,6 +39,7 @@ namespace Voltide.Core
             _providers.Add(new Luna33EvoProvider());
             _providers.Add(new ATKF1V3UltProvider());
             _providers.Add(new VancerAkitsuProvider());
+            _providers.Add(new R5UltraProvider());
         }
 
         public List<DeviceSnapshot> Snapshot()
@@ -72,8 +74,7 @@ namespace Voltide.Core
             {
                 catalog = new List<HidDeviceInfo>();
             }
-            
-            
+
             foreach (IDeviceProvider p in _providers)
             {
                 List<DeviceInfo> devices;
@@ -86,6 +87,9 @@ namespace Voltide.Core
                 {
                     continue;
                 }
+
+                if (devices == null)
+                    continue;
 
                 foreach (DeviceInfo d in devices)
                 {
