@@ -316,7 +316,9 @@ private List<MenuRow> BuildMenuRows()
         {
             row.Kind = MenuRowKind.Level;
             row.Percent = s.Reading.Percent.Value;
-            row.Value = s.Reading.Percent.Value + "%";
+
+            row.Value = s.Reading.Percent.Value +
+                (s.Reading.Charging ? "  ⚡" : "%");
         }
         else if (s.Reading != null && s.Reading.Online)
         {
